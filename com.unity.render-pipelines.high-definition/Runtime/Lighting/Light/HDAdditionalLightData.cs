@@ -1900,6 +1900,15 @@ namespace UnityEngine.Rendering.HighDefinition
                 HDShadowManager.cachedShadowManager.EvictLight(this);
         }
 
+        internal void DestroyHDLightEntity()
+        {
+            if (!lightEntity.valid)
+                return;
+
+            HDLightEntityCollection.instance.DestroyEntity(lightEntity);
+            lightEntity = HDLightEntity.Invalid;
+        }
+
         void OnDisable()
         {
             // If it is within the cached system we need to evict it, unless user explicitly requires not to.
@@ -1910,12 +1919,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             SetEmissiveMeshRendererEnabled(false);
             s_overlappingHDLights.Remove(this);
-
-            if (lightEntity.valid)
-            {
-                HDLightEntityCollection.instance.DestroyEntity(lightEntity);
-                lightEntity = HDLightEntity.Invalid;
-            }
+            DestroyHDLightEntity();
         }
 
         void SetEmissiveMeshRendererEnabled(bool enabled)
@@ -3452,19 +3456,11 @@ namespace UnityEngine.Rendering.HighDefinition
             ? ShadowMapType.PunctualAtlas
             : ShadowMapType.CascadedDirectional;
 
-        void OnEnable()
+        internal void CreateHDLightEntity()
         {
-            if (shadowUpdateMode != ShadowUpdateMode.EveryFrame && legacyLight.shadows != LightShadows.None)
-            {
-                HDShadowManager.cachedShadowManager.RegisterLight(this);
-            }
-
-            SetEmissiveMeshRendererEnabled(true);
-
             Assert.IsFalse(lightEntity.valid);
             HDLightEntityCollection lightEntities = HDLightEntityCollection.instance;
             lightEntity = lightEntities.CreateEntity(legacyLight.GetInstanceID(), transform);
-
             lightEntities.UpdateHDAdditionalLightData(lightEntity, this);//TODO: only added for shadow calculations. To be removed at some point.
             lightEntities.UpdateAOVGameObject(lightEntity, legacyLight.gameObject);
             lightEntities.UpdatePointLightType(lightEntity, m_PointlightHDType);
@@ -3484,6 +3480,18 @@ namespace UnityEngine.Rendering.HighDefinition
             lightEntities.UpdateVolumetricShadowDimmer(lightEntity, m_VolumetricShadowDimmer);
             lightEntities.UpdateAffectDiffuse(lightEntity, m_AffectDiffuse);
             lightEntities.UpdateAffectSpecular(lightEntity, m_AffectSpecular);
+        }
+
+        void OnEnable()
+        {
+            if (shadowUpdateMode != ShadowUpdateMode.EveryFrame && legacyLight.shadows != LightShadows.None)
+            {
+                HDShadowManager.cachedShadowManager.RegisterLight(this);
+            }
+
+            SetEmissiveMeshRendererEnabled(true);
+
+            CreateHDLightEntity();
         }
 
         /// <summary>

@@ -221,8 +221,7 @@ namespace UnityEngine.Rendering.HighDefinition
             using (new ProfilingScope(null, ProfilingSampler.Get(HDProfileId.BuildVisibleLightEntities)))
             {
                 if (cullResults.visibleLights.Length == 0
-                    || HDLightEntityCollection.instance == null
-                    || HDLightEntityCollection.instance.lightCount == 0)
+                    || HDLightEntityCollection.instance == null)
                     return;
 
                 if (cullResults.visibleLights.Length > m_Capacity)
@@ -236,7 +235,14 @@ namespace UnityEngine.Rendering.HighDefinition
                 for (int i = 0; i < cullResults.visibleLights.Length; ++i)
                 {
                     Light light = cullResults.visibleLights[i].light;
-                    m_VisibleEntities[i] = HDLightEntityCollection.instance.FindEntity(light);
+                    var entityData = HDLightEntityCollection.instance.FindEntity(light);
+                    if (!entityData.valid)
+                    {
+                        var defaultEntity = HDLightEntityCollection.instance.GetDefaultLightEntity();
+                        entityData = HDLightEntityCollection.instance.GetEntityData(defaultEntity);
+                    }
+
+                    m_VisibleEntities[i] = entityData;
                     m_VisibleLightBakingOutput[i] = light.bakingOutput;
                     m_VisibleLightShadows[i] = light.shadows;
                 }

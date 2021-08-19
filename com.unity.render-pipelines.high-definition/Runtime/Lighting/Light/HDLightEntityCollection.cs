@@ -42,6 +42,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public const int ArrayCapacity = 100;
         private int m_Capacity = 0;
         private int m_LightCount = 0;
+        private HDLightEntity m_DefaultLightEntity = HDLightEntity.Invalid;
 
         List<HDLightEntityData> m_LightEntities = new List<HDLightEntityData>();
         Queue<int> m_FreeIndices = new Queue<int>();
@@ -230,7 +231,20 @@ namespace UnityEngine.Rendering.HighDefinition
 
         public void Cleanup()
         {
+            m_DefaultLightEntity = HDLightEntity.Invalid;
+            HDUtils.s_DefaultHDAdditionalLightData.DestroyHDLightEntity();
             HDVisibleLightEntities.Cleanup();
+        }
+
+        public HDLightEntity GetDefaultLightEntity()
+        {
+            if (!IsValid(m_DefaultLightEntity))
+            {
+                HDUtils.s_DefaultHDAdditionalLightData.CreateHDLightEntity();
+                m_DefaultLightEntity = HDUtils.s_DefaultHDAdditionalLightData.lightEntity;
+            }
+
+            return m_DefaultLightEntity;
         }
 
         public bool IsValid(HDLightEntity entity)
@@ -238,11 +252,13 @@ namespace UnityEngine.Rendering.HighDefinition
             return entity.valid && entity.entityIndex < m_LightEntities.Count;
         }
 
-        public int GetEntityDataIndex(HDLightEntity entity)
+        public HDLightEntityData GetEntityData(HDLightEntity entity)
         {
             Assert.IsTrue(IsValid(entity));
-            return m_LightEntities[entity.entityIndex].dataIndex;
+            return m_LightEntities[entity.entityIndex];
         }
+
+        public int GetEntityDataIndex(HDLightEntity entity) => GetEntityData(entity).dataIndex;
 
         public HDLightEntityData FindEntity(in VisibleLight visibleLight) => FindEntity(visibleLight.light);
         public HDLightEntityData FindEntity(in Light light)
